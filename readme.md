@@ -38,16 +38,21 @@
    npm install
    ```
 
-2. **Start the RPC Server
+2. **Then run your first and boostrap node:
 
    ```bash
-    node server.js
+    hyperdht --bootstrap --host 127.0.0.1 --port 30001
    ```
 
 3. **Run the RPC Client
    ```bash
     node client.js
    ```
+#  Video Link
+
+You can check a short video aout demoing the implementation: https://drive.google.com/file/d/1ISvHKMRPbSJhnV5UhZYFvxCdtIsALKxD/view?usp=sharing
+
+
 #  Key Changes
 
 - Class Encapsulation: The P2PAuctionServer class wraps all the essential functionality needed to set up a peer-to-peer RPC server using Hyperbee, DHT, and Hyperswarm RPC. This helps keep the code organized and reusable.
