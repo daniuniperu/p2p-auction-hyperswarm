@@ -14,5 +14,8 @@
     "hyperbee": "^2.20.0",
     "hypercore": "^10.37.18",
     "sodium-native": "^4.1.1"
+  },
+  "devDependencies": {
+    "prettier": "3.3.3"
   }
 }

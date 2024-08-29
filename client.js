@@ -1,72 +1,35 @@
-'use strict';
+const P2PAuctionServer = require('./server.js');
 
-const HyperswarmRPC = require('@hyperswarm/rpc');
 
-// Configuration
-const CONFIG = {
-  PORT: process.env.RPC_PORT || 3000 // Use environment variable or default to 3000
-};
+async function executeAuctionClient() {
+    const customer1 = new P2PAuctionServer('Customer1', 40001, [{ host: '127.0.0.1', port: 30001 }], './db/customer1');
+    const customer2 = new P2PAuctionServer('Customer2', 40001, [{ host: '127.0.0.1', port: 30001 }], './db/customer2');
+    const customer3 = new P2PAuctionServer('Customer3', 40001, [{ host: '127.0.0.1', port: 30001 }], './db/customer3');
 
-// Function to initialize RPC client
-const initializeClient = async () => {
-  const rpc = new HyperswarmRPC.Client();
-  await rpc.connect(CONFIG.PORT);
-  return rpc;
-};
+    // Start the customer session peer, 
+    await Promise.all([customer1.start(), customer2.start(), customer3.start()]);
 
-// Function to open an auction
-const openAuction = async (rpc, itemId, description, price) => {
-  try {
-    await rpc.call('openAuction', itemId, description, price);
-    console.log('Auction opened for item:', itemId);
-  } catch (error) {
-    console.error('Failed to open auction:', error);
-  }
-};
+    // Customer 1 opens an auction
+    const customerAuction1 = `${customer1.id}-${Date.now()}`;
+    const auctionNumber1 = { id: customerAuction1, item: 'Pic#1', startingBid: 75 };
+    await customer1.openAuction(auctionNumber1);
 
-// Function to place a bid
-const placeBid = async (rpc, itemId, bidderId, bidAmount) => {
-  try {
-    await rpc.call('placeBid', itemId, bidderId, bidAmount);
-    console.log('Bid placed by', bidderId, 'for item:', itemId, 'with amount:', bidAmount);
-  } catch (error) {
-    console.error('Failed to place bid:', error);
-  }
-};
+    // Customer 2 opens an auction
+    const customerAuction2 = `${customer2.id}-${Date.now()}`;
+    const auction2 = { id: customerAuction2, item: 'Pic#2', startingBid: 60 };
+    await customer2.openAuction(auction2);
 
-// Function to close an auction
-const closeAuction = async (rpc, itemId) => {
-  try {
-    const result = await rpc.call('closeAuction', itemId);
-    console.log('Auction closed for item:', itemId, 'Result:', result);
-  } catch (error) {
-    console.error('Failed to close auction:', error);
-  }
-};
+    // Customer 2 makes a bid for Customer 1's auction
+    await customer2.placeBid(auctionNumber1.id, 75);
 
-// Main function to execute auction operations
-const main = async () => {
-  let rpc;
-  try {
-    rpc = await initializeClient();
+    // Customer 3 makes a bid for Customer 1's auction
+    await customer3.placeBid(auctionNumber1.id, 75.5);
 
-    // Open an auction
-    await openAuction(rpc, 'pic1', 'Sell Pic#1', 75);
+    // Customer 2 makes another bid for Customer 1's auction
+    await customer2.placeBid(auctionNumber1.id, 80);
 
-    // Place bids
-    await placeBid(rpc, 'pic1', 'Client2', 80);
+    // Customer 1 closes the auction
+    await customer1.closeAuction(auctionNumber1.id, customer1.id);
+}
 
-    // Close auction
-    await closeAuction(rpc, 'pic1');
-
-  } catch (error) {
-    console.error('Error in auction operations:', error);
-  } finally {
-    if (rpc) {
-      await rpc.close(); // Ensure RPC client is properly closed
-      console.log('RPC client closed');
-    }
-  }
-};
-
-main().catch(console.error);
+executeAuctionClient().catch(console.error);
