@@ -23,7 +23,6 @@ class P2PAuctionServer {
         this.dht = null;
         this.rpc = null;
         this.rpcServer = null;
-        this.rpcClient = null;
     }
 
     async initializeHyperbee() {
@@ -47,6 +46,7 @@ class P2PAuctionServer {
             keyPair: DHT.keyPair(dhtSeed),
             bootstrap: [{ host: '127.0.0.1', port: CONFIG.BOOTSTRAP_PORT }]
         });
+        await new Promise((resolve) => this.dht.once('ready', resolve));
     }
 
     async initializeRPC() {
@@ -64,7 +64,6 @@ class P2PAuctionServer {
 
         this.rpc = new HyperswarmRPC({ seed: Uint8Array.from(rpcSeed), dht: this.dht });
         this.rpcServer = this.rpc.createServer();
-        this.rpcClient = this.rpc.createClient();
         await this.rpcServer.listen();
         console.log('RPC server started listening on public key:', this.rpcServer.publicKey.toString('hex'));
     }
@@ -84,12 +83,15 @@ class P2PAuctionServer {
         this.rpcServer.respond('placeBid', async (reqRaw) => {
             try {
                 const { id, bidder, amount } = JSON.parse(reqRaw.toString('utf-8'));
-                const auction = await this.hbee.get(`auction-${id}`);
-                if (!auction) {
+                console.log('id, bidder, amount ' + id, bidder, amount)
+                const { value } = await this.hbee.get(`auction-${id}`);
+                console.log('auction ' + JSON.stringify(value))
+                if (!value) {
                     return Buffer.from(JSON.stringify({ success: false, error: 'Auction not found' }), 'utf-8');
                 }
-                auction.bids.push({ bidder, amount, timestamp: Date.now() });
-                await this.hbee.put(`auction-${id}`, auction);
+                value.bids.push({ bidder, amount, timestamp: Date.now() });
+                console.log('auction1 ' + JSON.stringify(value))
+                await this.hbee.put(`auction-${id}`, value);
                 return Buffer.from(JSON.stringify({ success: true }), 'utf-8');
             } catch (error) {
                 console.error('Error handling placeBid:', error);
@@ -100,11 +102,11 @@ class P2PAuctionServer {
         this.rpcServer.respond('closeAuction', async (reqRaw) => {
             try {
                 const { id } = JSON.parse(reqRaw.toString('utf-8'));
-                const auction = await this.hbee.get(`auction-${id}`);
-                if (!auction) {
+                const { value } = await this.hbee.get(`auction-${id}`);
+                if (!value) {
                     return Buffer.from(JSON.stringify({ success: false, error: 'Auction not found' }), 'utf-8');
                 }
-                const highestBid = auction.bids.reduce((prev, curr) => curr.amount > prev.amount ? curr : prev, { amount: 0 });
+                const highestBid = value.bids.reduce((prev, curr) => curr.amount > prev.amount ? curr : prev, { amount: 0 });
                 await this.hbee.del(`auction-${id}`);
                 return Buffer.from(JSON.stringify({ success: true, winner: highestBid.bidder, amount: highestBid.amount }), 'utf-8');
             } catch (error) {
@@ -112,22 +114,6 @@ class P2PAuctionServer {
                 return Buffer.from(JSON.stringify({ success: false, error: error.message }), 'utf-8');
             }
         });
-    }
-
-    async openAuction(auction) {
-        const { id, item, startingBid } = auction;
-        const response = await this.rpcServer.request(this.rpcServer.publicKey, 'openAuction', Buffer.from(JSON.stringify({ id, description: item, startingPrice: startingBid }), 'utf-8'));
-        console.log('Opened auction:', response.toString('utf-8'));
-    }
-
-    async placeBid(auctionId, bidder, amount) {
-        const response = await this.rpcServer.request(this.rpcServer.publicKey, 'placeBid', Buffer.from(JSON.stringify({ id: auctionId, bidder, amount }), 'utf-8'));
-        console.log('Placed bid:', response.toString('utf-8'));
-    }
-
-    async closeAuction(auctionId) {
-        const response = await this.rpcServer.request(this.rpcServer.publicKey, 'closeAuction', Buffer.from(JSON.stringify({ id: auctionId }), 'utf-8'));
-        console.log('Closed auction:', response.toString('utf-8'));
     }
 
     async start() {
