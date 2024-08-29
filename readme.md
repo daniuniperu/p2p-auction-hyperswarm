@@ -48,6 +48,16 @@
    ```bash
     node client.js
    ```
+#  Key Changes
+
+- Class Encapsulation: The P2PAuctionServer class wraps all the essential functionality needed to set up a peer-to-peer RPC server using Hyperbee, DHT, and Hyperswarm RPC. This helps keep the code organized and reusable.
+
+- Clear Initialization Steps: The class has dedicated methods—initializeHyperbee, initializeDHT, and initializeRPC—to set up each component (Hyperbee, DHT, and RPC) separately. This makes the code easier to follow and maintain.
+
+- Organized RPC connectFunctions: There's a separate connectFunctions method that binds RPC handlers to the server. This approach keeps the start method clean and focused on just setting up the server.
+
+Improved Error Handling: The start method includes error-catching to log any issues that occur during initialization, making it easier to debug and maintain the server.
+
 
 #  COMMON ERRORS
     When executing the server:  node server.js
