@@ -64,7 +64,7 @@ const Hyperbee = require('hyperbee')
 const crypto = require('crypto')
 
 const main = async () => {
-  // hyperbee db
+  // Initihyperbee db
   const hcore = new Hypercore('./db/rpc-server')
   const hbee = new Hyperbee(hcore, { keyEncoding: 'utf-8', valueEncoding: 'binary' })
   await hbee.ready()
@@ -168,3 +168,68 @@ const main = async () => {
 
 main().catch(console.error)
 ```
+
+# SOLUTION - The Tether challenge
+
+         +----------------------+
+         |      Hyperswarm       |
+         |  (Peer-to-Peer        |
+         |   Networking)         |
+         +-----------+----------+
+                     |
+                     | Handles peer discovery and connections
+                     |
+         +-----------v----------+
+         |      Hyperdht         |
+         |  (Decentralized       |
+         |   Hash Table)         |
+         +-----------+----------+
+                     |
+                     | Provides decentralized lookup for peers and data
+                     |
+         +-----------v----------+
+         |      Hypercore        |
+         |  (Append-Only Logs)   |
+         +-----------+----------+
+                     |
+                     | Provides foundational data structure for replication
+                     |
+         +-----------v----------+
+         |      Hyperbee         |
+         |  (Key-Value Store)    |
+         +----------------------+
+
+# P2P Auction System
+
+## Setup
+
+1. **Install Dependencies**
+
+   ```bash
+   npm install
+
+2. **Start the RPC Server
+
+   ```bash
+    node server.js
+3. **Run the RPC Client
+   ```bash
+    node client.js
+
+
+#  COMMON ERRORS
+    When executing the server:  node server.js
+
+    ```bash
+    Error in main execution: Error: ELOCKED: File is locked
+        at createLockError (/Users/danielsosarios/Documents/projects/p2p-auction-hyperswarm/node_modules/random-access-file/index.js:249:15)
+        at onopen (/Users/danielsosarios/Documents/projects/p2p-auction-hyperswarm/node_modules/random-access-file/index.js:105:19)
+        at FSReqCallback.oncomplete (node:fs:187:23) {
+    code: 'ELOCKED',
+    path: 'db/rpc-server/oplog'
+    }
+
+    Solution
+     Sometimes lock files are left behind after a process crashes or is interrupted. Try deleting the lock files manually:
+     ```bash
+     rm -f db/rpc-server/oplog
